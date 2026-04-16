@@ -196,6 +196,18 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script>
+    // Emergency loading dismiss
+    window.addEventListener('error', function() {
+        var ol = document.getElementById('loading-overlay');
+        if (ol) { ol.style.display = 'none'; }
+    });
+    // Also dismiss after 3 seconds no matter what
+    setTimeout(function() {
+        var ol = document.getElementById('loading-overlay');
+        if (ol) { ol.style.display = 'none'; }
+    }, 3000);
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
