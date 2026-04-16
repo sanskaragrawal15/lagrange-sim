@@ -1,0 +1,8 @@
+{
+  "name": "bellevistat",
+  "version": "1.0.0",
+  "description": "Earth-Moon Lagrange System Simulation",
+  "scripts": {
+    "start": "serve ."
+  }
+}
