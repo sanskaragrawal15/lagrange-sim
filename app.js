@@ -1611,6 +1611,15 @@
         this.classList.toggle("active", showField);
     });
 
+    // Fullscreen button
+    document.getElementById("btnFullscreen").addEventListener("click", function () {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+            document.exitFullscreen().catch(() => {});
+        }
+    });
+
     // Camera presets
     document.getElementById("camOverview").addEventListener("click", () => setCamPreset("overview"));
     document.getElementById("camBellevistat").addEventListener("click", () => setCamPreset("bellevistat"));
@@ -1635,6 +1644,8 @@
             case "o": document.getElementById("btnOrbits").click(); break;
             case "c": document.getElementById("btnCargo").click(); break;
             case "g": document.getElementById("btnField").click(); break;
+            case "f": document.getElementById("btnFullscreen").click(); break;
+            case "Escape": if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); break;
         }
     });
 
@@ -1824,6 +1835,15 @@
         } else {
             renderer.render(scene, camera);
         }
+
+        // Force dismiss loading overlay on first frame
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (loadingOverlay && loadingOverlay.style.display !== "none" && loadingOverlay.classList.contains("fade-out") === false) {
+            loadingOverlay.classList.add("fade-out");
+            setTimeout(() => {
+                if (loadingOverlay) loadingOverlay.style.display = "none";
+            }, 1000);
+        }
     }
 
     // ============================================================
@@ -1838,6 +1858,20 @@
                 setTimeout(() => overlay.style.display = "none", 1000);
             }
         }, 8000);
+
+        // Check if landscape overlay should be shown (only on mobile portrait mode)
+        function checkLandscapePrompt() {
+            const isMobileScreen = window.innerWidth < 768;
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const landscapeOverlay = document.getElementById("landscape-overlay");
+            if (isMobileScreen && isPortrait && landscapeOverlay) {
+                landscapeOverlay.style.display = "flex";
+            }
+        }
+
+        // Check on load and on resize
+        checkLandscapePrompt();
+        window.addEventListener("resize", checkLandscapePrompt);
 
         try {
             createStars();

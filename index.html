@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000005">
     <title>Earth-Moon Lagrange System — Bellevistat at L4</title>
     <meta name="description" content="High-fidelity real-time 3D interactive orbital simulation of the Earth-Moon Lagrange system featuring the Bellevistat industrial settlement at L4.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,6 +43,7 @@
                 <button id="btnOrbits" class="hud-btn active" title="Toggle Orbital Rings">◎</button>
                 <button id="btnCargo" class="hud-btn" title="Toggle Cargo Routes">📦</button>
                 <button id="btnField" class="hud-btn" title="Toggle Gravity Field">🌀</button>
+                <button id="btnFullscreen" class="hud-btn" title="Toggle Fullscreen">⛶</button>
             </div>
             <div class="panel-divider"></div>
             <div class="panel-title" style="margin-top:8px">CAMERA PRESETS</div>
@@ -175,8 +179,8 @@
         </div>
     </div>
 
-    <!-- Landscape Orientation Prompt -->
-    <div id="landscape-overlay">
+    <!-- Landscape Orientation Prompt (hidden by default, shown via JS on mobile only) -->
+    <div id="landscape-overlay" style="display: none;">
         <div class="landscape-content">
             <div class="rotate-icon">🔄</div>
             <h2>Please Rotate Device</h2>
