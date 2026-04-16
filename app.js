@@ -1849,6 +1849,7 @@
     // ============================================================
     //  INIT
     // ============================================================
+    function init() {
         // Force dismiss loading overlay as a safety measure
         const failSafeTimeout = setTimeout(() => {
             const overlay = document.getElementById("loading-overlay");
