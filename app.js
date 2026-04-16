@@ -2,6 +2,10 @@
 (function () {
     "use strict";
 
+    // ── Device Detection ───────────────────────────────────────────────
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    const isLowEnd = isMobile || window.innerWidth < 480;
+
     // ── constants ──────────────────────────────────────────────
     const DEG = Math.PI / 180;
     const TWO_PI = Math.PI * 2;
@@ -51,10 +55,6 @@
 
     // FPS tracking
     let frameCount = 0, fpsAccum = 0, lastFpsUpdate = 0, displayFps = 60;
-
-    // ── Device Detection ───────────────────────────────────────────────
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-    const isLowEnd = isMobile || window.innerWidth < 480;
     
     // ── renderer ───────────────────────────────────────────────
     const canvas = document.getElementById("mainCanvas");
