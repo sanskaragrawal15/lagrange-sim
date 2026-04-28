@@ -46,12 +46,12 @@
     let globalIsMobile = isMobile;
     let globalIsLowEnd = isLowEnd;
 
-    // Camera
-    let camR = 320, camTheta = Math.PI * 0.25, camPhi = Math.PI * 0.35;
+    // Camera — start in cinematic mode for dramatic first impression
+    let camR = 280, camTheta = Math.PI * 0.18, camPhi = Math.PI * 0.32;
     let targetCamR = camR, targetCamTheta = camTheta, targetCamPhi = camPhi;
     let isDragging = false, prevMouse = { x: 0, y: 0 };
-    let cinematicMode = false;
-    let cinematicTime = 0;
+    let cinematicMode = true;
+    let cinematicTime = Math.PI * 0.18;
 
     // FPS tracking
     let frameCount = 0, fpsAccum = 0, lastFpsUpdate = 0, displayFps = 60;
@@ -64,13 +64,14 @@
         alpha: true,
         powerPreference: isLowEnd ? "low-power" : "high-performance",
     });
-    renderer.setPixelRatio(isLowEnd ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isLowEnd ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = !isLowEnd;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.setClearColor(0x000005, 1);
+    renderer.setClearColor(0x000008, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.15;
+    renderer.outputEncoding = THREE.sRGBEncoding;
 
     // ── scene & camera ─────────────────────────────────────────
     const scene = new THREE.Scene();
@@ -93,66 +94,194 @@
     // ============================================================
     //  1. ENHANCED STAR FIELD WITH NEBULA
     // ============================================================
+    let starSystems = [];
+
     function createStars() {
-        // Layer 1 – faint background (reduced on mobile)
-        const count1 = isLowEnd ? 1500 : 4000;
+        // ── Milky Way Skybox ─────────────────────────────────────
+        if (!isLowEnd) createMilkyWay();
+
+        // Layer 1 – faint background dust stars
+        const count1 = isLowEnd ? 1500 : 5000;
         const pos1 = new Float32Array(count1 * 3);
         const colors1 = new Float32Array(count1 * 3);
+        const sizes1 = new Float32Array(count1);
         for (let i = 0; i < count1; i++) {
             pos1[i * 3] = (Math.random() - 0.5) * 3500;
             pos1[i * 3 + 1] = (Math.random() - 0.5) * 3500;
             pos1[i * 3 + 2] = (Math.random() - 0.5) * 3500;
             const temp = Math.random();
-            if (temp < 0.1) {
-                colors1[i * 3] = 1.0; colors1[i * 3 + 1] = 0.8; colors1[i * 3 + 2] = 0.6;
-            } else if (temp < 0.2) {
-                colors1[i * 3] = 0.7; colors1[i * 3 + 1] = 0.8; colors1[i * 3 + 2] = 1.0;
+            if (temp < 0.08) {
+                colors1[i * 3] = 1.0; colors1[i * 3 + 1] = 0.7; colors1[i * 3 + 2] = 0.5;
+            } else if (temp < 0.18) {
+                colors1[i * 3] = 0.6; colors1[i * 3 + 1] = 0.75; colors1[i * 3 + 2] = 1.0;
+            } else if (temp < 0.22) {
+                colors1[i * 3] = 1.0; colors1[i * 3 + 1] = 0.9; colors1[i * 3 + 2] = 0.7;
             } else {
                 colors1[i * 3] = 1.0; colors1[i * 3 + 1] = 1.0; colors1[i * 3 + 2] = 1.0;
             }
+            sizes1[i] = 0.4 + Math.random() * 0.6;
         }
         const geom1 = new THREE.BufferGeometry();
         geom1.setAttribute("position", new THREE.BufferAttribute(pos1, 3));
         geom1.setAttribute("color", new THREE.BufferAttribute(colors1, 3));
         const mat1 = new THREE.PointsMaterial({
-            size: isLowEnd ? 1.2 : 0.8,
+            size: isLowEnd ? 1.0 : 0.7,
             vertexColors: true,
             transparent: true,
-            opacity: 0.7,
+            opacity: 0.8,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
+            sizeAttenuation: true,
         });
-        scene.add(new THREE.Points(geom1, mat1));
+        const stars1 = new THREE.Points(geom1, mat1);
+        scene.add(stars1);
+        starSystems.push(stars1);
 
-        // Layer 2 – bright stars (reduced on mobile)
-        const count2 = isLowEnd ? 200 : 600;
+        // Layer 2 – medium bright stars
+        const count2 = isLowEnd ? 200 : 700;
         const pos2 = new Float32Array(count2 * 3);
+        const colors2 = new Float32Array(count2 * 3);
         for (let i = 0; i < count2; i++) {
             pos2[i * 3] = (Math.random() - 0.5) * 3500;
             pos2[i * 3 + 1] = (Math.random() - 0.5) * 3500;
             pos2[i * 3 + 2] = (Math.random() - 0.5) * 3500;
+            const t = Math.random();
+            if (t < 0.15) {
+                colors2[i * 3] = 1.0; colors2[i * 3 + 1] = 0.85; colors2[i * 3 + 2] = 0.6;
+            } else if (t < 0.3) {
+                colors2[i * 3] = 0.7; colors2[i * 3 + 1] = 0.85; colors2[i * 3 + 2] = 1.0;
+            } else {
+                colors2[i * 3] = 1.0; colors2[i * 3 + 1] = 1.0; colors2[i * 3 + 2] = 0.98;
+            }
         }
         const geom2 = new THREE.BufferGeometry();
         geom2.setAttribute("position", new THREE.BufferAttribute(pos2, 3));
+        geom2.setAttribute("color", new THREE.BufferAttribute(colors2, 3));
         const mat2 = new THREE.PointsMaterial({
-            size: isLowEnd ? 2.0 : 1.5,
-            color: 0xffffff,
+            size: isLowEnd ? 1.8 : 1.4,
+            vertexColors: true,
             transparent: true,
-            opacity: 0.9,
+            opacity: 0.95,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
         });
-        scene.add(new THREE.Points(geom2, mat2));
+        const stars2 = new THREE.Points(geom2, mat2);
+        scene.add(stars2);
+        starSystems.push(stars2);
+
+        // Layer 3 – brilliant highlight stars (few, large, bright)
+        const count3 = isLowEnd ? 20 : 80;
+        const pos3 = new Float32Array(count3 * 3);
+        for (let i = 0; i < count3; i++) {
+            pos3[i * 3] = (Math.random() - 0.5) * 3000;
+            pos3[i * 3 + 1] = (Math.random() - 0.5) * 3000;
+            pos3[i * 3 + 2] = (Math.random() - 0.5) * 3000;
+        }
+        const geom3 = new THREE.BufferGeometry();
+        geom3.setAttribute("position", new THREE.BufferAttribute(pos3, 3));
+        const mat3 = new THREE.PointsMaterial({
+            size: 2.5,
+            color: 0xffffff,
+            transparent: true,
+            opacity: 1.0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        const stars3 = new THREE.Points(geom3, mat3);
+        scene.add(stars3);
+        starSystems.push(stars3);
 
         // Nebula clouds
         createNebula();
     }
 
+    // ── Procedural Milky Way Skybox ──────────────────────────────
+    function createMilkyWay() {
+        const w = 2048, h = 1024;
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+
+        // Deep space background
+        ctx.fillStyle = '#010108';
+        ctx.fillRect(0, 0, w, h);
+
+        // Milky Way band — only smooth gradients, NO putImageData
+        ctx.globalCompositeOperation = 'lighter';
+
+        // Large diffuse band glow (main milky way haze)
+        for (let i = 0; i < 60; i++) {
+            const gx = Math.random() * w;
+            const gy = h * 0.5 + (Math.random() - 0.5) * h * 0.25;
+            const gr = 80 + Math.random() * 250;
+            const grad = ctx.createRadialGradient(gx, gy, 0, gx, gy, gr);
+            const a = 0.003 + Math.random() * 0.006;
+            const hue = Math.random();
+            let r, g, b;
+            if (hue < 0.3) { r = 100; g = 90; b = 140; }       // purple
+            else if (hue < 0.5) { r = 80; g = 100; b = 140; }  // blue
+            else if (hue < 0.7) { r = 130; g = 110; b = 90; }  // warm
+            else { r = 90; g = 110; b = 100; }                   // teal
+            grad.addColorStop(0, `rgba(${r},${g},${b},${a})`);
+            grad.addColorStop(0.6, `rgba(${r},${g},${b},${a * 0.3})`);
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(gx - gr, gy - gr, gr * 2, gr * 2);
+        }
+
+        // Tiny star dots using anti-aliased circles (not pixel data)
+        for (let i = 0; i < 2000; i++) {
+            const sx = Math.random() * w;
+            const ny = (Math.random() - 0.5) * 2;
+            const bandBias = Math.exp(-ny * ny * 5);
+            // More stars near band center
+            if (Math.random() > bandBias * 0.6 + 0.05) continue;
+            const sy = h * 0.5 + ny * h * 0.5;
+            const brightness = 150 + Math.random() * 105;
+            const radius = 0.4 + Math.random() * 1.0;
+            const alpha = 0.15 + Math.random() * 0.4;
+            ctx.beginPath();
+            ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${brightness},${brightness * 0.95},${brightness * 0.9},${alpha})`;
+            ctx.fill();
+        }
+
+        // Scattered brighter stars everywhere (very few)
+        for (let i = 0; i < 150; i++) {
+            const sx = Math.random() * w;
+            const sy = Math.random() * h;
+            const radius = 0.5 + Math.random() * 0.8;
+            ctx.beginPath();
+            ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,240,${0.1 + Math.random() * 0.25})`;
+            ctx.fill();
+        }
+
+        ctx.globalCompositeOperation = 'source-over';
+
+        const tex = new THREE.CanvasTexture(canvas);
+        const skyGeo = new THREE.SphereGeometry(2200, 48, 48);
+        const skyMat = new THREE.MeshBasicMaterial({
+            map: tex,
+            side: THREE.BackSide,
+            depthWrite: false,
+            fog: false,
+        });
+        const skyMesh = new THREE.Mesh(skyGeo, skyMat);
+        skyMesh.rotation.x = 0.3; // Tilt the milky way
+        skyMesh.rotation.z = 0.2;
+        scene.add(skyMesh);
+    }
+
     function createNebula() {
         if (isLowEnd) return;
         const nebulaColors = [
-            { color: 0x4411aa, opacity: 0.012, size: 600, pos: [-800, 200, -1000] },
-            { color: 0x1144aa, opacity: 0.008, size: 500, pos: [600, -300, -900] },
+            { color: 0x4411aa, opacity: 0.015, size: 600, pos: [-800, 200, -1000] },
+            { color: 0x1144aa, opacity: 0.010, size: 500, pos: [600, -300, -900] },
+            { color: 0x220066, opacity: 0.008, size: 700, pos: [900, 400, -1200] },
+            { color: 0x113355, opacity: 0.012, size: 450, pos: [-500, -200, -800] },
+            { color: 0x441155, opacity: 0.006, size: 550, pos: [200, 600, -1100] },
+            { color: 0x0d2244, opacity: 0.010, size: 480, pos: [-900, -100, -700] },
         ];
 
         for (const n of nebulaColors) {
@@ -163,6 +292,7 @@
                 opacity: n.opacity,
                 side: THREE.BackSide,
                 depthWrite: false,
+                fog: false,
             });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(...n.pos);
@@ -178,29 +308,36 @@
     const sunPos = new THREE.Vector3(-3500, 200, 1000);
 
     function createLights() {
-        // Sun directional
-        const sun = new THREE.DirectionalLight(0xfff5e0, 2.6);
+        // Sun directional — primary illumination
+        const sun = new THREE.DirectionalLight(0xfff8e8, 3.0);
         sun.position.copy(sunPos);
         sun.castShadow = true;
-        sun.shadow.mapSize.set(2048, 2048);
+        sun.shadow.mapSize.set(isLowEnd ? 1024 : 4096, isLowEnd ? 1024 : 4096);
         sun.shadow.bias = -0.0001;
+        sun.shadow.camera.near = 100;
+        sun.shadow.camera.far = 8000;
         scene.add(sun);
 
-        // Secondary sun fill
-        const sunFill = new THREE.DirectionalLight(0xffe0b0, 0.4);
+        // Secondary sun fill — subtle warm bounce
+        const sunFill = new THREE.DirectionalLight(0xffe0b0, 0.3);
         sunFill.position.set(-1000, -50, 300);
         scene.add(sunFill);
 
-        // Deep-space ambient
-        const ambient = new THREE.AmbientLight(0x0a0a2e, 0.45);
+        // Deep-space ambient — very dark for realistic contrast
+        const ambient = new THREE.AmbientLight(0x080818, 0.3);
         scene.add(ambient);
 
-        // Hemisphere light for subtle top/bottom differentiation
-        const hemi = new THREE.HemisphereLight(0x1122aa, 0x0a0505, 0.15);
+        // Hemisphere light — subtle sky/ground differentiation
+        const hemi = new THREE.HemisphereLight(0x0a1133, 0x060308, 0.2);
         scene.add(hemi);
 
-        // Earth albedo
-        earthAlbedoLight = new THREE.PointLight(0x2244ff, 0.35, 90);
+        // Subtle rim light from opposite side for depth
+        const rimLight = new THREE.DirectionalLight(0x334488, 0.15);
+        rimLight.position.set(2000, -100, -500);
+        scene.add(rimLight);
+
+        // Earth albedo — blue-ish reflected light
+        earthAlbedoLight = new THREE.PointLight(0x1133aa, 0.5, 100);
         earthAlbedoLight.position.set(0, 0, 0);
         scene.add(earthAlbedoLight);
 
@@ -376,6 +513,46 @@
         }));
         sunGlow.scale.set(1600, 1600, 1);
         sunGroup.add(sunGlow);
+
+        // Outer corona (larger, subtler)
+        const coronaCanvas = document.createElement('canvas');
+        coronaCanvas.width = 512; coronaCanvas.height = 512;
+        const cCtx = coronaCanvas.getContext('2d');
+        const cGrad = cCtx.createRadialGradient(256, 256, 0, 256, 256, 256);
+        cGrad.addColorStop(0, 'rgba(255, 200, 80, 0.6)');
+        cGrad.addColorStop(0.3, 'rgba(255, 150, 50, 0.15)');
+        cGrad.addColorStop(0.6, 'rgba(255, 100, 30, 0.03)');
+        cGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        cCtx.fillStyle = cGrad; cCtx.fillRect(0,0,512,512);
+
+        const outerCorona = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: new THREE.CanvasTexture(coronaCanvas),
+            blending: THREE.AdditiveBlending,
+            transparent: true, depthWrite: false
+        }));
+        outerCorona.scale.set(2000, 2000, 1);
+        sunGroup.add(outerCorona);
+
+        // Horizontal lens streak
+        const streakCanvas = document.createElement('canvas');
+        streakCanvas.width = 1024; streakCanvas.height = 64;
+        const sCtx = streakCanvas.getContext('2d');
+        const sGrad = sCtx.createLinearGradient(0, 32, 1024, 32);
+        sGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        sGrad.addColorStop(0.3, 'rgba(255, 220, 130, 0.03)');
+        sGrad.addColorStop(0.5, 'rgba(255, 240, 180, 0.08)');
+        sGrad.addColorStop(0.7, 'rgba(255, 220, 130, 0.03)');
+        sGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        sCtx.fillStyle = sGrad; sCtx.fillRect(0, 0, 1024, 64);
+
+        const lensStreak = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: new THREE.CanvasTexture(streakCanvas),
+            blending: THREE.AdditiveBlending,
+            transparent: true, depthWrite: false
+        }));
+        lensStreak.scale.set(2500, 120, 1);
+        sunGroup.add(lensStreak);
+
         scene.add(sunGroup);
 
         const planetsData = [
@@ -465,21 +642,21 @@
     // ============================================================
     //  3. ENHANCED EARTH
     // ============================================================
-    let earthGroup, earthMesh, cloudMesh;
+    let earthGroup, earthMesh, cloudMesh, nightMesh;
 
     function createEarth() {
         earthGroup = new THREE.Group();
-
-        // Main sphere
-        const geo = new THREE.SphereGeometry(EARTH_RADIUS, 64, 64);
         const loader = new THREE.TextureLoader();
+        const baseUrl = 'https://threejs.org/examples/textures/planets/';
 
+        // High-detail sphere
+        const geo = new THREE.SphereGeometry(EARTH_RADIUS, isLowEnd ? 64 : 128, isLowEnd ? 64 : 128);
+
+        // Photorealistic Earth material with all NASA textures
         const earthMat = new THREE.MeshPhongMaterial({
-            color: 0x2288cc,
-            specular: 0x4499ff,
-            shininess: 45,
-            emissive: 0x061020,
-            emissiveIntensity: 0.2,
+            color: 0xffffff,
+            specular: new THREE.Color(0x666666),
+            shininess: 25,
         });
         earthMesh = new THREE.Mesh(geo, earthMat);
         earthMesh.castShadow = true;
@@ -490,59 +667,154 @@
         };
         clickables.push(earthMesh);
 
-        loader.load(
-            "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg",
-            function (tex) {
-                earthMesh.material.map = tex;
-                earthMesh.material.needsUpdate = true;
-            },
-            undefined,
-            function () { /* fallback color already set */ }
-        );
-
+        // Load day texture
+        loader.load(baseUrl + 'earth_atmos_2048.jpg', function(tex) {
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            earthMat.map = tex;
+            earthMat.needsUpdate = true;
+        });
+        // Load bump/normal map for terrain relief
+        loader.load(baseUrl + 'earth_normal_2048.jpg', function(tex) {
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            earthMat.bumpMap = tex;
+            earthMat.bumpScale = 0.8;
+            earthMat.needsUpdate = true;
+        });
+        // Load specular map — oceans reflect, land does not
+        loader.load(baseUrl + 'earth_specular_2048.jpg', function(tex) {
+            earthMat.specularMap = tex;
+            earthMat.needsUpdate = true;
+        });
         earthGroup.add(earthMesh);
 
-        // Cloud layer
-        const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.03, 48, 48);
+        // Night-side city lights (slightly smaller sphere, additive blending)
+        const nightGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.001, isLowEnd ? 64 : 128, isLowEnd ? 64 : 128);
+        const nightMat = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 1.0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        nightMesh = new THREE.Mesh(nightGeo, nightMat);
+        loader.load(
+            'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_lights_2048.png',
+            function(tex) {
+                tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                nightMat.map = tex;
+                nightMat.needsUpdate = true;
+            },
+            undefined,
+            function() { /* Silent fail — night lights are optional */ }
+        );
+        earthGroup.add(nightMesh);
+
+        // Cloud layer with real cloud texture
+        const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.015, isLowEnd ? 48 : 80, isLowEnd ? 48 : 80);
         const cloudMat = new THREE.MeshPhongMaterial({
             color: 0xffffff,
             transparent: true,
-            opacity: 0.12,
+            opacity: 0.35,
             depthWrite: false,
+            side: THREE.DoubleSide,
         });
         cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+        // Try multiple cloud texture URLs with fallbacks
+        function applyCloudTex(tex) {
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            cloudMat.map = tex;
+            cloudMat.alphaMap = tex;
+            cloudMat.needsUpdate = true;
+        }
+        function createProceduralClouds() {
+            const cSize = 1024;
+            const cCanvas = document.createElement('canvas');
+            cCanvas.width = cSize; cCanvas.height = cSize / 2;
+            const cCtx = cCanvas.getContext('2d');
+            cCtx.fillStyle = 'rgba(0,0,0,0)';
+            cCtx.clearRect(0, 0, cSize, cSize / 2);
+            // Draw swirly cloud patterns
+            for (let i = 0; i < 400; i++) {
+                const cx = Math.random() * cSize;
+                const cy = Math.random() * cSize / 2;
+                const cr = 8 + Math.random() * 50;
+                const grd = cCtx.createRadialGradient(cx, cy, 0, cx, cy, cr);
+                grd.addColorStop(0, `rgba(255,255,255,${0.08 + Math.random() * 0.12})`);
+                grd.addColorStop(0.5, `rgba(255,255,255,${0.02 + Math.random() * 0.04})`);
+                grd.addColorStop(1, 'rgba(255,255,255,0)');
+                cCtx.fillStyle = grd;
+                cCtx.fillRect(cx - cr, cy - cr, cr * 2, cr * 2);
+            }
+            return new THREE.CanvasTexture(cCanvas);
+        }
+        loader.load(
+            'https://raw.githubusercontent.com/mrdoob/three.js/r128/examples/textures/planets/earth_clouds_1024.png',
+            applyCloudTex,
+            undefined,
+            function() {
+                // Second fallback: procedural clouds
+                const pTex = createProceduralClouds();
+                applyCloudTex(pTex);
+            }
+        );
         earthGroup.add(cloudMesh);
 
-        // Inner atmosphere glow
-        const atmoGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.12, 48, 48);
-        const atmoMat = new THREE.MeshBasicMaterial({
-            color: 0x4499ff,
-            transparent: true,
-            opacity: 0.06,
+        // Fresnel atmosphere shader — realistic blue haze around Earth's limb
+        const atmoVS = [
+            'varying vec3 vNormal;',
+            'varying vec3 vPositionView;',
+            'void main() {',
+            '  vNormal = normalize(normalMatrix * normal);',
+            '  vPositionView = (modelViewMatrix * vec4(position, 1.0)).xyz;',
+            '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+            '}'
+        ].join('\n');
+        const atmoFS = [
+            'varying vec3 vNormal;',
+            'varying vec3 vPositionView;',
+            'void main() {',
+            '  vec3 viewDir = normalize(-vPositionView);',
+            '  float rim = 1.0 - max(dot(viewDir, vNormal), 0.0);',
+            '  rim = pow(rim, 2.8);',
+            '  vec3 atmoColor = vec3(0.3, 0.5, 1.0);',
+            '  gl_FragColor = vec4(atmoColor, rim * 0.6);',
+            '}'
+        ].join('\n');
+
+        // Inner atmosphere glow (Fresnel)
+        const atmoGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.12, 64, 64);
+        const atmoMat = new THREE.ShaderMaterial({
+            vertexShader: atmoVS,
+            fragmentShader: atmoFS,
             side: THREE.BackSide,
+            transparent: true,
             depthWrite: false,
+            blending: THREE.AdditiveBlending,
         });
         earthGroup.add(new THREE.Mesh(atmoGeo, atmoMat));
 
-        // Outer atmosphere halo
-        const haloGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.25, 32, 32);
-        const haloMat = new THREE.MeshBasicMaterial({
-            color: 0x3388ff,
-            transparent: true,
-            opacity: 0.03,
+        // Outer halo — larger, softer
+        const haloGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.28, 48, 48);
+        const haloFS = [
+            'varying vec3 vNormal;',
+            'varying vec3 vPositionView;',
+            'void main() {',
+            '  vec3 viewDir = normalize(-vPositionView);',
+            '  float rim = 1.0 - max(dot(viewDir, vNormal), 0.0);',
+            '  rim = pow(rim, 4.0);',
+            '  vec3 col = vec3(0.25, 0.5, 1.0);',
+            '  gl_FragColor = vec4(col, rim * 0.35);',
+            '}'
+        ].join('\n');
+        const haloMat = new THREE.ShaderMaterial({
+            vertexShader: atmoVS,
+            fragmentShader: haloFS,
             side: THREE.BackSide,
+            transparent: true,
             depthWrite: false,
+            blending: THREE.AdditiveBlending,
         });
         earthGroup.add(new THREE.Mesh(haloGeo, haloMat));
-
-        // Subtle grid overlay
-        const wireGeo = new THREE.SphereGeometry(EARTH_RADIUS * 1.005, 24, 12);
-        const edges = new THREE.EdgesGeometry(wireGeo);
-        const wireframe = new THREE.LineSegments(
-            edges,
-            new THREE.LineBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.08 })
-        );
-        earthGroup.add(wireframe);
 
         // Axial tilt
         earthGroup.rotation.z = 23.5 * DEG;
@@ -555,13 +827,11 @@
     let moonMesh, moonGlow;
 
     function createMoon() {
-        const geo = new THREE.SphereGeometry(MOON_RADIUS, 48, 48);
+        const geo = new THREE.SphereGeometry(MOON_RADIUS, isLowEnd ? 48 : 96, isLowEnd ? 48 : 96);
         const mat = new THREE.MeshPhongMaterial({
-            color: 0xbbbbbb,
-            specular: 0x444444,
-            shininess: 8,
-            emissive: 0x050505,
-            emissiveIntensity: 0.1,
+            color: 0xdddddd,
+            specular: new THREE.Color(0x222222),
+            shininess: 5,
         });
         moonMesh = new THREE.Mesh(geo, mat);
         moonMesh.castShadow = true;
@@ -572,24 +842,27 @@
         clickables.push(moonMesh);
 
         const loader = new THREE.TextureLoader();
-        loader.load(
-            "https://threejs.org/examples/textures/planets/moon_1024.jpg",
-            function (tex) {
-                moonMesh.material.map = tex;
-                moonMesh.material.needsUpdate = true;
-            },
-            undefined,
-            function () { }
-        );
+        const baseUrl = 'https://threejs.org/examples/textures/planets/';
+        loader.load(baseUrl + 'moon_1024.jpg', function(tex) {
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            mat.map = tex;
+            mat.needsUpdate = true;
+        });
+        // Moon bump map for crater detail
+        loader.load(baseUrl + 'moon_1024.jpg', function(tex) {
+            mat.bumpMap = tex;
+            mat.bumpScale = 0.6;
+            mat.needsUpdate = true;
+        });
 
         scene.add(moonMesh);
 
-        // Moon shadow glow
-        const glowGeo = new THREE.SphereGeometry(MOON_RADIUS * 1.3, 24, 24);
+        // Moon subtle glow halo
+        const glowGeo = new THREE.SphereGeometry(MOON_RADIUS * 1.2, 24, 24);
         const glowMat = new THREE.MeshBasicMaterial({
-            color: 0x888899,
+            color: 0x8888aa,
             transparent: true,
-            opacity: 0.04,
+            opacity: 0.035,
             side: THREE.BackSide,
             depthWrite: false,
         });
@@ -1388,20 +1661,42 @@
     // ============================================================
     function updateCamera(dt) {
         if (cinematicMode) {
-            cinematicTime += dt * 0.15;
-            targetCamTheta = cinematicTime;
-            targetCamPhi = Math.PI * 0.3 + Math.sin(cinematicTime * 0.3) * 0.15;
-            targetCamR = 280 + Math.sin(cinematicTime * 0.5) * 60;
+            cinematicTime += dt * 0.12;
+            // Multi-phase cinematic: overview → earth close → L4 → sweep
+            const phase = (cinematicTime * 0.15) % 4;
+            if (phase < 1) {
+                // Wide overview orbit
+                targetCamTheta = cinematicTime * 0.2;
+                targetCamPhi = Math.PI * 0.32 + Math.sin(cinematicTime * 0.25) * 0.1;
+                targetCamR = 300 + Math.sin(cinematicTime * 0.3) * 40;
+            } else if (phase < 2) {
+                // Closer to Earth
+                targetCamTheta = cinematicTime * 0.15;
+                targetCamPhi = Math.PI * 0.38 + Math.sin(cinematicTime * 0.2) * 0.08;
+                targetCamR = 120 + Math.sin(cinematicTime * 0.4) * 30;
+            } else if (phase < 3) {
+                // Towards L4/Bellevistat
+                const l4a = moonAngle + Math.PI / 3;
+                targetCamTheta = l4a + Math.sin(cinematicTime * 0.1) * 0.3;
+                targetCamPhi = Math.PI * 0.35 + Math.sin(cinematicTime * 0.15) * 0.1;
+                targetCamR = 80 + Math.sin(cinematicTime * 0.35) * 20;
+            } else {
+                // Grand sweep
+                targetCamTheta = cinematicTime * 0.25;
+                targetCamPhi = Math.PI * 0.25 + Math.sin(cinematicTime * 0.18) * 0.15;
+                targetCamR = 250 + Math.sin(cinematicTime * 0.22) * 80;
+            }
         }
 
-        // Smooth interpolation
-        camR += (targetCamR - camR) * Math.min(dt * 3, 1);
-        camTheta += (targetCamTheta - camTheta) * Math.min(dt * 3, 1);
-        camPhi += (targetCamPhi - camPhi) * Math.min(dt * 3, 1);
+        // Smooth exponential interpolation
+        const smoothing = Math.min(dt * 2.5, 1);
+        camR += (targetCamR - camR) * smoothing;
+        camTheta += (targetCamTheta - camTheta) * smoothing;
+        camPhi += (targetCamPhi - camPhi) * smoothing;
 
         // Clamp
-        camPhi = Math.max(0.1, Math.min(Math.PI - 0.1, camPhi));
-        camR = Math.max(30, Math.min(800, camR));
+        camPhi = Math.max(0.08, Math.min(Math.PI - 0.08, camPhi));
+        camR = Math.max(25, Math.min(1200, camR));
 
         camera.position.set(
             camR * Math.sin(camPhi) * Math.cos(camTheta),
@@ -1418,9 +1713,9 @@
 
         switch (preset) {
             case 'overview':
-                targetCamR = 320;
-                targetCamTheta = Math.PI * 0.25;
-                targetCamPhi = Math.PI * 0.35;
+                targetCamR = 280;
+                targetCamTheta = Math.PI * 0.18;
+                targetCamPhi = Math.PI * 0.32;
                 document.getElementById('camOverview').classList.add('active');
                 break;
             case 'bellevistat':
@@ -1441,6 +1736,12 @@
                 cinematicMode = true;
                 cinematicTime = camTheta;
                 document.getElementById('camCinematic').classList.add('active');
+                break;
+            case 'solar':
+                targetCamR = 800;
+                targetCamTheta = Math.PI * 0.15;
+                targetCamPhi = Math.PI * 0.35;
+                document.getElementById('camSolarSystem').classList.add('active');
                 break;
         }
     }
@@ -1625,6 +1926,7 @@
     document.getElementById("camBellevistat").addEventListener("click", () => setCamPreset("bellevistat"));
     document.getElementById("camTop").addEventListener("click", () => setCamPreset("top"));
     document.getElementById("camCinematic").addEventListener("click", () => setCamPreset("cinematic"));
+    document.getElementById("camSolarSystem").addEventListener("click", () => setCamPreset("solar"));
 
     // Keyboard shortcuts
     window.addEventListener("keydown", (e) => {
@@ -1639,6 +1941,7 @@
             case "2": setCamPreset("bellevistat"); break;
             case "3": setCamPreset("top"); break;
             case "4": setCamPreset("cinematic"); break;
+            case "5": setCamPreset("solar"); break;
             case "t": document.getElementById("btnTriangle").click(); break;
             case "l": document.getElementById("btnLPoints").click(); break;
             case "o": document.getElementById("btnOrbits").click(); break;
@@ -1682,7 +1985,7 @@
             frameCount = 0;
             fpsAccum = 0;
         }
-        if (fpsEl) fpsEl.textContent = displayFps + " FPS";
+        if (fpsEl) fpsEl.textContent = displayFps;
     }
 
     // ============================================================
@@ -1733,7 +2036,16 @@
         // Earth rotation
         if (earthMesh) {
             earthMesh.rotation.y += dt * speed * 0.3;
+            if (nightMesh) nightMesh.rotation.y = earthMesh.rotation.y;
             cloudMesh.rotation.y += dt * speed * 0.35;
+            cloudMesh.rotation.x += dt * speed * 0.02;
+        }
+
+        // Star twinkling (subtle opacity pulsing on bright stars)
+        if (starSystems.length > 2 && !isLowEnd) {
+            const twinkle = 0.85 + 0.15 * Math.sin(t * 2.5);
+            starSystems[2].material.opacity = twinkle;
+            starSystems[1].material.opacity = 0.9 + 0.1 * Math.sin(t * 1.8 + 1.0);
         }
 
         // L-points
@@ -1932,9 +2244,9 @@
         if (!isLowEnd) {
             const renderScene = new THREE.RenderPass(scene, camera);
             const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-            bloomPass.threshold = 0.85;
-            bloomPass.strength = 0.6;
-            bloomPass.radius = 0.5;
+            bloomPass.threshold = 0.82;
+            bloomPass.strength = 0.45;
+            bloomPass.radius = 0.4;
             
             composer = new THREE.EffectComposer(renderer);
             composer.addPass(renderScene);
